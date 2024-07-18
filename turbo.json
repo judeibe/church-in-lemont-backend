@@ -1,0 +1,25 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "lint": {
+      "dependsOn": ["^lint"],
+      "outputs": ["src/**"]
+    },
+    "build": {
+      "dependsOn": ["^lint", "^build"],
+      "outputs": ["dist/**"]
+    },
+    "start:prod": {
+      "dependsOn": ["build"],
+      "persistent": true
+    },
+    "start:dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "test:cov": {
+      "dependsOn": ["^lint", "^test"],
+      "outputs": ["coverage/**"]
+    }
+  }
+}
