@@ -6,11 +6,10 @@
       "outputs": ["src/**"]
     },
     "build": {
-      "dependsOn": ["^lint", "^build"],
       "outputs": ["dist/**"]
     },
-    "start:prod": {
-      "dependsOn": ["build"],
+    "start": {
+      "cache": false,
       "persistent": true
     },
     "start:dev": {
