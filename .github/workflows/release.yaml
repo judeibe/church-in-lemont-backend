@@ -1,9 +1,9 @@
-name: Codacy Coverage Reporter
+name: Release Workflow
 
 on:
-  pull_request:
-    branches:
-      - main
+  push:
+    tags:
+      - v*
 
 jobs:
   test:
@@ -64,8 +64,8 @@ jobs:
 
   codacy-coverage-reporter:
     runs-on: ubuntu-latest
-    name: codacy-coverage-reporter
-    needs: test
+    name: Codacy Coverage Reporter
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         name: "☁️ Checkout repository"
@@ -75,11 +75,70 @@ jobs:
         with:
           name: code-coverage-report
 
+      - uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2
+        name: "📦 Setup pnpm"
+        with:
+          run_install: false
+
       - name: Run codacy-coverage-reporter
         uses: codacy/codacy-coverage-reporter-action@89d6c85cfafaec52c72b6c5e8b2878d33104c699
         with:
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
-          # or
-          # api-token: ${{ secrets.CODACY_API_TOKEN }}
-          # or a comma-separated list for multiple reports
-          # coverage-reports: <PATH_TO_REPORT>, <PATH_TO_REPORT>
+
+  end-to-end-tests:
+    runs-on: ubuntu-latest
+    name: End-to-End Tests
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        name: "☁️ Checkout repository"
+
+      - uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2
+        name: "📦 Setup pnpm"
+        with:
+          run_install: false
+
+      - name: "📦 Setup Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "pnpm"
+
+      - name: "🧶 Install dependencies"
+        run: pnpm install
+
+      - name: "🧪 Run end-to-end tests"
+        run: pnpm test:e2e
+
+  release:
+    runs-on: ubuntu-latest
+    environment: production
+    name: Release
+    timeout-minutes: 10
+    needs:
+      - test
+      - lint
+      - codacy-coverage-reporter
+      - end-to-end-tests
+    steps:
+      - uses: actions/checkout@v4
+        name: "☁️ Checkout repository"
+
+      - uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2
+        name: "📦 Setup pnpm"
+        with:
+          run_install: false
+
+      - name: "📦 Setup Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "pnpm"
+
+      - name: "🧶 Install dependencies"
+        run: pnpm install
+
+      - name: "🧪 Run release"
+        shell: bash
+        run: |
+          curl --request GET '${{ secrets.COOLIFY_WEBHOOK }}' --header 'Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}'
