@@ -14,7 +14,7 @@ diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);
 const traceExporter = new OTLPTraceExporter({
   url: "https://observe.judeibe.com/api/default/traces",
   headers: {
-    Authorization: "Basic YWRtaW5AZXhhbXBsZS5jb206T3hheFlWcEVYZFpqT0hSZQ==",
+    Authorization: `Basic ${process.env.OTEL_EXPORTER_OTLP_HEADERS_AUTHORIZATION}`,
   },
 });
 

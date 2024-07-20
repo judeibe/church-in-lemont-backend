@@ -24,7 +24,6 @@ const config = {
   importOrderParserPlugins: ["typescript", "decorators-legacy"],
   importOrderMergeDuplicateImports: true,
   importOrderCombineTypeAndValueImports: true,
-  singleQuote: false,
   trailingComma: "all",
   plugins: ["@ianvs/prettier-plugin-sort-imports"],
 };
