@@ -1,0 +1,73 @@
+name: Codacy Coverage Reporter
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Test Application
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        name: "☁️ Checkout repository"
+
+      - uses: pnpm/action-setup@v4
+        name: "📦 Setup pnpm"
+        with:
+          run_install: false
+
+      - name: "📦 Setup Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: 'pnpm'
+
+      - name: "🧶 Install dependencies"
+        run: pnpm install"
+
+      - name: "🧪 Run tests"
+        run: pnpm test:cov"
+
+  lint:
+    runs-on: ubuntu-latest
+    name: Code Standards
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        name: "☁️ Checkout repository"
+
+      - uses: pnpm/action-setup@v4
+        name: "📦 Setup pnpm"
+        with:
+          run_install: false
+
+      - name: "📦 Setup Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: 'pnpm'
+
+      - name: "🧶 Install dependencies"
+        run: pnpm install"
+
+      - name: "🧪 Run lint"
+        run: pnpm lint"
+
+  codacy-coverage-reporter:
+    runs-on: ubuntu-latest
+    name: codacy-coverage-reporter
+    needs: test
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run codacy-coverage-reporter
+        uses: codacy/codacy-coverage-reporter-action@v1.3.0
+        with:
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          # or
+          # api-token: ${{ secrets.CODACY_API_TOKEN }}
+          coverage-reports: coverage/lcov.info
+          # or a comma-separated list for multiple reports
+          # coverage-reports: <PATH_TO_REPORT>, <PATH_TO_REPORT>
