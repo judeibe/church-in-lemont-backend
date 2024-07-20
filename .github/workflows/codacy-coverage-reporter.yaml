@@ -1,0 +1,85 @@
+name: Codacy Coverage Reporter
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Test Application
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        name: "☁️ Checkout repository"
+
+      - uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2
+        name: "📦 Setup pnpm"
+        with:
+          run_install: false
+
+      - name: "📦 Setup Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "pnpm"
+
+      - name: "🧶 Install dependencies"
+        run: pnpm install
+
+      - name: "🧪 Run tests"
+        run: pnpm test:cov
+
+      - name: "🧪 Upload coverage"
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage-report
+          path: coverage
+
+  lint:
+    runs-on: ubuntu-latest
+    name: Code Standards
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        name: "☁️ Checkout repository"
+
+      - uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2
+        name: "📦 Setup pnpm"
+        with:
+          run_install: false
+
+      - name: "📦 Setup Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "pnpm"
+
+      - name: "🧶 Install dependencies"
+        run: pnpm install
+
+      - name: "🧪 Run lint"
+        run: pnpm lint
+
+  codacy-coverage-reporter:
+    runs-on: ubuntu-latest
+    name: codacy-coverage-reporter
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+        name: "☁️ Checkout repository"
+
+      - uses: actions/download-artifact@v4
+        name: "📦 Download code coverage report"
+        with:
+          name: code-coverage-report
+
+      - name: Run codacy-coverage-reporter
+        uses: codacy/codacy-coverage-reporter-action@89d6c85cfafaec52c72b6c5e8b2878d33104c699
+        with:
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          # or
+          # api-token: ${{ secrets.CODACY_API_TOKEN }}
+          # or a comma-separated list for multiple reports
+          # coverage-reports: <PATH_TO_REPORT>, <PATH_TO_REPORT>
