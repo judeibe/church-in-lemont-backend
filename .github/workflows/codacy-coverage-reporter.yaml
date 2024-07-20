@@ -26,10 +26,10 @@ jobs:
           cache: 'pnpm'
 
       - name: "🧶 Install dependencies"
-        run: pnpm install"
+        run: pnpm install
 
       - name: "🧪 Run tests"
-        run: pnpm test:cov"
+        run: pnpm test:cov
 
   lint:
     runs-on: ubuntu-latest
@@ -51,10 +51,10 @@ jobs:
           cache: 'pnpm'
 
       - name: "🧶 Install dependencies"
-        run: pnpm install"
+        run: pnpm install
 
       - name: "🧪 Run lint"
-        run: pnpm lint"
+        run: pnpm lint
 
   codacy-coverage-reporter:
     runs-on: ubuntu-latest
