@@ -76,7 +76,7 @@ jobs:
         run: pnpm install
 
       - name: "🧪 Run lint"
-        run: pnpm exec turvo lint
+        run: pnpm exec turbo lint
 
   codacy-coverage-reporter:
     runs-on: ubuntu-latest
