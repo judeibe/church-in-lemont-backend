@@ -19,6 +19,14 @@ jobs:
         with:
           run_install: false
 
+      - name: Cache turbo build setup
+        uses: actions/cache@v4
+        with: 
+          path: .turbo
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-
+
       - name: "📦 Setup Node.js"
         uses: actions/setup-node@v4
         with:
@@ -29,7 +37,7 @@ jobs:
         run: pnpm install
 
       - name: "🧪 Run tests"
-        run: pnpm test:cov
+        run: pnpm exec turbo test:cov
 
       - name: "🧪 Upload coverage"
         uses: actions/upload-artifact@v4
@@ -50,6 +58,14 @@ jobs:
         with:
           run_install: false
 
+      - name: Cache turbo build setup
+        uses: actions/cache@v4
+        with: 
+          path: .turbo
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-
+
       - name: "📦 Setup Node.js"
         uses: actions/setup-node@v4
         with:
@@ -60,7 +76,7 @@ jobs:
         run: pnpm install
 
       - name: "🧪 Run lint"
-        run: pnpm lint
+        run: turbo exec pnpm lint
 
   codacy-coverage-reporter:
     runs-on: ubuntu-latest
@@ -99,6 +115,14 @@ jobs:
         with:
           run_install: false
 
+      - name: Cache turbo build setup
+        uses: actions/cache@v4
+        with: 
+          path: .turbo
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-
+
       - name: "📦 Setup Node.js"
         uses: actions/setup-node@v4
         with:
@@ -109,7 +133,7 @@ jobs:
         run: pnpm install
 
       - name: "🧪 Run end-to-end tests"
-        run: pnpm test:e2e
+        run: pnpm exec turbo test:e2e
 
   release:
     runs-on: ubuntu-latest
@@ -122,24 +146,38 @@ jobs:
       - codacy-coverage-reporter
       - end-to-end-tests
     steps:
-      - uses: actions/checkout@v4
-        name: "☁️ Checkout repository"
-
-      - uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2
-        name: "📦 Setup pnpm"
-        with:
-          run_install: false
-
-      - name: "📦 Setup Node.js"
-        uses: actions/setup-node@v4
-        with:
-          node-version: "18"
-          cache: "pnpm"
-
-      - name: "🧶 Install dependencies"
-        run: pnpm install
+      - name: Install jq
+        run: sudo apt-get install -y jq
 
       - name: "🧪 Run release"
         shell: bash
         run: |
-          curl --request GET '${{ secrets.COOLIFY_WEBHOOK }}' --header 'Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}'
+          response=${curl --request GET '${{ secrets.COOLIFY_WEBHOOK }}' --header 'Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}')
+          deployment_uuid=$(echo $response | jq -r '.deployment_uuid')
+          url="http://coolify.judeibe.com/api/v1/deployments/${deployment_uuid}"
+
+           # Initialize deployment_status
+          deployment_status=""
+          # Loop until deployment_status is "finished" or "failed"
+          while [[ "$deployment_status" != "finished" && "$deployment_status" != "failed" ]]; do
+            echo "Checking deployment status..."
+            deployment_status=$(curl --request GET "$url" --header 'Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}' | jq -r '.status')
+            echo "Current status: $deployment_status"
+
+            # If status is "failed", exit the script with a non-zero status code to fail the step
+            if [[ "$deployment_status" == "failed" ]]; then
+              echo "Deployment failed. Exiting with error."
+              exit 1
+            fi
+
+            # If status is "finished", break the loop
+            if [[ "$deployment_status" == "finished" ]]; then
+              echo "Deployment completed successfully."
+              break
+            fi
+
+            # Wait for 5 seconds before the next check
+            sleep 5
+          done
+
+
