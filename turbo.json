@@ -17,8 +17,9 @@
       "persistent": true
     },
     "test:cov": {
-      "dependsOn": ["^lint", "^test"],
       "outputs": ["coverage/**"]
+    },
+    "test:e2e": {
     }
   }
 }
