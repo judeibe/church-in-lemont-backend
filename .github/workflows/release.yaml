@@ -76,7 +76,7 @@ jobs:
         run: pnpm install
 
       - name: "🧪 Run lint"
-        run: turbo exec pnpm lint
+        run: pnpm exec turbo lint
 
   codacy-coverage-reporter:
     runs-on: ubuntu-latest
@@ -146,24 +146,27 @@ jobs:
       - codacy-coverage-reporter
       - end-to-end-tests
     steps:
-      - name: Install jq
-        run: sudo apt-get install -y jq
-
       - name: "🧪 Run release"
         shell: bash
         run: |
-          response=${curl --request GET '${{ secrets.COOLIFY_WEBHOOK }}' --header 'Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}')
-          deployment_uuid=$(echo $response | jq -r '.deployment_uuid')
+          response=$(curl --request GET '${{ secrets.COOLIFY_WEBHOOK }}' --header 'Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}' --silent)
+          deployment_uuid=$(echo $response | jq -r '.deployments[].deployment_uuid')
           url="http://coolify.judeibe.com/api/v1/deployments/${deployment_uuid}"
 
-           # Initialize deployment_status
+          # Initialize deployment_status
           deployment_status=""
+          previous_status=""
+
           # Loop until deployment_status is "finished" or "failed"
           while [[ "$deployment_status" != "finished" && "$deployment_status" != "failed" ]]; do
-            echo "Checking deployment status..."
-            deployment_status=$(curl --request GET "$url" --header 'Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}' | jq -r '.status')
-            echo "Current status: $deployment_status"
+            deployment_status=$(curl --request GET "$url" --header 'Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}' --silent | jq -r '.status')
 
+            # Only echo the status if it has changed
+            if [[ "$deployment_status" != "$previous_status" ]]; then
+              echo "Current status: $deployment_status"
+              previous_status=$deployment_status
+            fi
+            
             # If status is "failed", exit the script with a non-zero status code to fail the step
             if [[ "$deployment_status" == "failed" ]]; then
               echo "Deployment failed. Exiting with error."
